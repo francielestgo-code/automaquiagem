@@ -78,8 +78,6 @@
                        placeholder="Sua cidade">
             </div>
 
-            <!-- O campo de E-mail foi removido daqui. -->
-
             <!-- Campo Preferência de Data/Horário -->
             <div class="mb-6">
                 <label for="preferencia" class="block text-sm font-medium text-gray-700 mb-1">Data/Horário de Preferência</label>
@@ -92,6 +90,21 @@
             <h2 class="text-2xl font-bold text-gray-700 mt-8 mb-4 border-b pb-2 border-purple-200">
                 Questionário
             </h2>
+
+            <!-- Modalidade (Online ou Presencial) -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2 font-semibold">Você prefere o curso:</label>
+                <div class="flex space-x-6">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="modalidade" value="Presencial" required class="form-radio text-purple-600">
+                        <span class="ml-2 text-gray-700">Presencial</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="modalidade" value="Online" required class="form-radio text-purple-600">
+                        <span class="ml-2 text-gray-700">Online</span>
+                    </label>
+                </div>
+            </div>
 
             <!-- Qual o seu tipo de pele? -->
             <div class="mb-4">
@@ -157,14 +170,22 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Possui alergia a cosméticos?</label>
                 <div class="flex space-x-6">
                     <label class="inline-flex items-center">
-                        <input type="radio" name="alergia" value="Sim" required class="form-radio text-purple-600">
+                        <input type="radio" name="alergia" value="Sim" id="alergiaSim" required class="form-radio text-purple-600">
                         <span class="ml-2 text-gray-700">Sim</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" name="alergia" value="Não" checked class="form-radio text-purple-600">
+                        <input type="radio" name="alergia" value="Não" id="alergiaNao" checked class="form-radio text-purple-600">
                         <span class="ml-2 text-gray-700">Não</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Detalhes da Alergia (aparece se 'Sim' for selecionado) -->
+            <div id="alergiaDetalhesContainer" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg hidden">
+                <label for="alergiaDetalhes" class="block text-sm font-medium text-red-700 mb-1 font-semibold">Qual o tipo de alergia (especifique):</label>
+                <textarea id="alergiaDetalhes" name="alergiaDetalhes" rows="2" 
+                          class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150"
+                          placeholder="Ex: Níquel, látex, ou ingredientes específicos de maquiagem"></textarea>
             </div>
 
             <!-- Botão de Envio para WhatsApp -->
@@ -187,6 +208,29 @@
     </div>
 
     <script>
+        // Função para mostrar/esconder o campo de detalhes da alergia
+        function toggleAlergiaDetalhes() {
+            const container = document.getElementById('alergiaDetalhesContainer');
+            const alergiaSim = document.getElementById('alergiaSim');
+            
+            if (alergiaSim.checked) {
+                container.classList.remove('hidden');
+                document.getElementById('alergiaDetalhes').setAttribute('required', 'true');
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('alergiaDetalhes').removeAttribute('required');
+                document.getElementById('alergiaDetalhes').value = ''; // Limpa o campo ao esconder
+            }
+        }
+
+        // Adiciona listeners para os botões de rádio de Alergia
+        document.getElementById('alergiaSim').addEventListener('change', toggleAlergiaDetalhes);
+        document.getElementById('alergiaNao').addEventListener('change', toggleAlergiaDetalhes);
+        
+        // Inicializa o estado (garante que está escondido no carregamento)
+        document.addEventListener('DOMContentLoaded', toggleAlergiaDetalhes);
+
+
         document.getElementById('inscricaoForm').addEventListener('submit', function(e) {
             e.preventDefault(); // Impede o envio tradicional do formulário
             
@@ -194,18 +238,24 @@
             const nome = document.getElementById('nome').value.trim();
             const telefone = document.getElementById('telefone').value.trim();
             const cidade = document.getElementById('cidade').value.trim();
-            // E-mail foi removido da coleta de dados
             const preferencia = document.getElementById('preferencia').value.trim() || 'Nenhuma especificada';
 
             // 2. Coleta os dados do QUESTIONÁRIO
+            const modalidade = document.querySelector('input[name="modalidade"]:checked')?.value || 'Não informada';
             const tipoPele = document.getElementById('tipoPele').value || 'Não informado';
             const fototipoPele = document.getElementById('fototipoPele').value || 'Não informado';
             const tonsSombra = document.getElementById('tonsSombra').value.trim() || 'Nenhuma especificada';
             const corCabelo = document.getElementById('corCabelo').value.trim() || 'Não informada';
             const idade = document.getElementById('idade').value.trim() || 'Não informada';
             const alergia = document.querySelector('input[name="alergia"]:checked')?.value || 'Não informado';
+            
+            // 3. Coleta o detalhe da alergia (se aplicável)
+            let detalhesAlergia = 'N/A';
+            if (alergia === 'Sim') {
+                detalhesAlergia = document.getElementById('alergiaDetalhes').value.trim() || 'Sim, mas detalhes não especificados';
+            }
 
-            // 3. Monta a mensagem para o WhatsApp com todos os dados
+            // 4. Monta a mensagem para o WhatsApp com todos os dados
             const messageTemplate = 
 `*INSCRIÇÃO - CURSO DE AUTOMAQUIAGEM*
         
@@ -216,23 +266,25 @@
 *Preferencia de Data:* ${preferencia}
 
 *--- QUESTIONÁRIO PRÉ-CURSO ---*
+*Modalidade:* ${modalidade}
 *Tipo de Pele:* ${tipoPele}
 *Fototipo de Pele:* ${fototipoPele}
 *Tons de Sombra Preferidos:* ${tonsSombra}
 *Cor do Cabelo:* ${corCabelo}
 *Idade:* ${idade}
 *Alergia a Cosméticos:* ${alergia}
+*Detalhes da Alergia:* ${detalhesAlergia}
 
-Por favor, confirme minha inscrição e me envie os detalhes do curso.`;
+Por favor, confirme minha inscrição e me envie os detalhes do curso.`; 
 
-            // 4. Codifica a mensagem para ser segura na URL
+            // 5. Codifica a mensagem para ser segura na URL
             const encodedMessage = encodeURIComponent(messageTemplate);
             
-            // 5. Constrói o URL do WhatsApp
+            // 6. Constrói o URL do WhatsApp
             // Número de destino: 5555999158167
             const whatsappUrl = `https://wa.me/5555999158167?text=${encodedMessage}`;
             
-            // 6. Exibe a mensagem de status e redireciona
+            // 7. Exibe a mensagem de status e redireciona
             const statusMessage = document.getElementById('statusMessage');
             statusMessage.classList.remove('hidden');
             statusMessage.textContent = 'Redirecionando para o WhatsApp...';
